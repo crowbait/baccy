@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+walkdir = "2"
+crossbeam = "0.8"
+indicatif = "0.17"
+filetime = "0.2"
+colored = "3.0.0"
