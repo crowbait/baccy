@@ -12,23 +12,34 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{options::Exclude, progress_helpers::{finish_progress, spinner, PROGERSS_BAR_TASK}, scanner::scanner};
+use crate::{options::Exclude, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner};
 
 mod options;
 mod progress_helpers;
 mod scanner;
-mod task_copy;
+mod task_copy_delete;
 
 // Represents a copy or delete task
 enum Task {
-  Copy(task_copy::Copy),
-  Delete(PathBuf),
+  Copy(task_copy_delete::Copy),
+  Delete(task_copy_delete::Delete),
+}
+impl Task {
+  fn relative(&self) -> &String {
+    match self {
+      Task::Copy(c) => &c.relative,
+      Task::Delete(d) => &d.relative,
+    }
+  }
 }
 
 fn main() {
   let src = Path::new("D:/cloud.crowbait");
   let dst = Path::new("Y:/backup/cloud.crowbait");
-  let exclusions: Vec<Exclude> = vec![Exclude::Pattern(String::from(".*"))];
+  let exclusions: Vec<Exclude> = vec![
+    Exclude::Pattern(String::from(".*")),
+    Exclude::DirName(String::from("node_modules"))
+  ];
 
   if !src.exists() {
     eprintln!("{} {} {}", "Source directory ".bright_red().bold(), src.display(), " not found.".bright_red().bold());
@@ -36,10 +47,15 @@ fn main() {
   }
 
   println!();
-  println!("Sync: {} → {}", src.to_str().unwrap().cyan(), dst.to_str().unwrap().cyan());
+  println!("{}", format!(
+    "Sync: {} → {}",
+    src.to_str().unwrap().cyan(),
+    dst.to_str().unwrap().cyan()
+  ).bold());
 
   // Count total files - progress spinner
-  let progress = spinner("Counting files in source...");
+  let mut progress = ProgressBar::new_spinner();
+  setup_spinner(&mut progress, "Counting files...");
 
   // Count total files
   let total_files = WalkDir::new(src)
@@ -71,7 +87,9 @@ fn main() {
     .progress_chars(PROGERSS_BAR_TASK)
   );
   work_progress.set_message("Files copied:");
-
+  let mut filename_progress = progress.add(ProgressBar::new_spinner());
+  setup_spinner(&mut filename_progress, "");
+  
   // Scanner thread: processes file metadata and creates tasks for worker thread
   let src_clone = src.to_path_buf().clone();
   let dst_clone = dst.to_path_buf().clone();
@@ -83,13 +101,17 @@ fn main() {
     tx,
     num_positive_clone,
     num_delete_clone,
-    scan_progress,
+    &scan_progress,
     exclusions
   ));
 
   let mut is_delete_step = false; // deletes ALWAYS get processed after copies, making this safe
   let mut deleted_count = 0;
   for task in rx {
+    filename_progress.set_message(format!(
+      "{}",
+      task.relative().dimmed()
+    ));
     match task {
       Task::Copy(task) => {
         work_progress.set_length(num_scanned_positive.load(Ordering::SeqCst) as u64);
@@ -107,17 +129,18 @@ fn main() {
         }
         work_progress.inc(1);
       }
-      Task::Delete(path) => {
+      Task::Delete(task) => {
         if !is_delete_step {
           is_delete_step = true;
           finish_progress(work_progress, format!(
             "Copied {} files.",
             num_scanned_positive.load(Ordering::SeqCst).to_string().cyan()
           ));
-          work_progress = spinner("Deleting files...");
+          work_progress = progress.add(ProgressBar::new_spinner());
+          setup_spinner(&mut work_progress, "Deleting files...");
         }
 
-        let _ = fs::remove_file(path);
+        let _ = fs::remove_file(task.path);
 
         deleted_count += 1;
         let deleted_count_colored = deleted_count.to_string().cyan();
@@ -137,8 +160,11 @@ fn main() {
       num_scanned_positive.load(Ordering::SeqCst).to_string().cyan()
     ));
   }
+  filename_progress.finish_and_clear();
+  progress.remove(&filename_progress);
 
-  work_progress = spinner("Finding directories to delete...");
+  work_progress = progress.add(ProgressBar::new_spinner());
+  setup_spinner(&mut work_progress, "Finding directories to delete...");
 
   // find all directories (and their relative paths) in source
   let source_dirs: HashSet<PathBuf> = WalkDir::new(&src)
@@ -164,10 +190,13 @@ fn main() {
   for dir in dst_dirs {
     let _ = fs::remove_dir(&dir);
   }
-
-  println!();
-  work_progress.finish_with_message(format!(
-    "Deleted {} directories in destination not present in source.",
-    dst_dirs_count.to_string().cyan()
-  ));
+  if dst_dirs_count > 0 {
+    work_progress.finish_with_message(format!(
+      "Deleted {} directories in destination not present in source.",
+      dst_dirs_count.to_string().cyan()
+    ));
+  } else {
+    work_progress.finish_and_clear();
+    progress.remove(&work_progress);
+  }
 }

@@ -19,12 +19,10 @@ pub fn spinner_style() -> ProgressStyle {
     "▪▪▪",
   ])
 }
-pub fn spinner(msg: &'static str) -> ProgressBar {
-  let progress = ProgressBar::new_spinner();
+pub fn setup_spinner(progress: &mut ProgressBar, msg: &'static str) {
   progress.set_style(spinner_style());
   progress.enable_steady_tick(Duration::from_millis(150));
   progress.set_message(msg);
-  progress
 }
 
 /// Replaces a progress bar with a "finished" spinner and sets a message.

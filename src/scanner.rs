@@ -6,7 +6,7 @@ use glob::Pattern;
 use indicatif::ProgressBar;
 use walkdir::WalkDir;
 
-use crate::{options::Exclude, progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy, Task};
+use crate::{options::Exclude, progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy_delete, Task};
 
 pub fn scanner(
   src: PathBuf,
@@ -14,7 +14,7 @@ pub fn scanner(
   tx: Sender<Task>,
   num_positive: Arc<AtomicUsize>,
   num_delete: Arc<AtomicUsize>,
-  progress: ProgressBar,
+  progress: &ProgressBar,
   exclude: Vec<Exclude>
 ) {
   let mut scanned_total: u64 = 0;
@@ -92,7 +92,11 @@ pub fn scanner(
     if needs_copy {
       // increment positive match count (for worker progress) and send task
       num_positive.fetch_add(1, Ordering::SeqCst);
-      tx.send(Task::Copy(task_copy::Copy::new(entry.path().to_path_buf(), path_in_dst))).unwrap();
+      tx.send(Task::Copy(task_copy_delete::Copy::new(
+        entry.path().to_path_buf(),
+        path_in_dst,
+        relative_path.display().to_string(),
+      ))).unwrap();
     }
 
     progress.inc(1);
@@ -111,12 +115,16 @@ pub fn scanner(
       let path_in_src = src.join(relative_path);
       if !path_in_src.exists() {
         num_delete.fetch_add(1, Ordering::SeqCst);
-        tx.send(Task::Delete(entry.path().to_path_buf())).unwrap();
+        tx.send(Task::Delete(task_copy_delete::Delete::new(
+          entry.path().to_path_buf(),
+          relative_path.display().to_string()
+        ))).unwrap();
       }
     }
   }
 
   let num_pos = num_positive.load(Ordering::SeqCst) as u64;
+  progress.disable_steady_tick();
   progress.finish_with_message(format!(
     "Scanned {} files: {} skipped, {} to copy, {} marked for deletion.",
     scanned_total.to_string().cyan(),

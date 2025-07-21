@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, fs, path::PathBuf, io::{Read, Write}};
+use std::{fs, path::PathBuf, io::{Read, Write}};
 
 use filetime::FileTime;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -8,11 +8,12 @@ use crate::progress_helpers::PROGERSS_BAR_FILE;
 pub struct Copy {
   pub from: PathBuf,
   pub to: PathBuf,
+  pub relative: String,
 }
 
 impl Copy {
-  pub fn new(from: PathBuf, to: PathBuf) -> Copy {
-    Copy{from, to}
+  pub fn new(from: PathBuf, to: PathBuf, relative: String) -> Self {
+    Self{from, to, relative}
   }
 
   pub fn get_filesize(&self) -> u64 {
@@ -36,13 +37,14 @@ impl Copy {
   pub fn execute_with_progress(&self, progress: &MultiProgress) -> std::io::Result<()> {
     let file_progress = progress.add(ProgressBar::new(self.get_filesize()));
     file_progress.set_style(
-      ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
+      // ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
+      ProgressStyle::with_template("Copying: {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
         .unwrap()
         .progress_chars(PROGERSS_BAR_FILE)
     );
-    file_progress.set_message(format!("{}",
-      self.from.file_name().unwrap_or(OsStr::new("unknown")).to_str().unwrap()
-    ));
+    // file_progress.set_message(format!("{}",
+    //   self.from.file_name().unwrap_or(OsStr::new("unknown")).to_str().unwrap()
+    // ));
 
     let mut reader = fs::File::open(&self.from)?;
     let mut writer = fs::File::create(&self.to)?;
@@ -64,5 +66,18 @@ impl Copy {
     file_progress.finish_and_clear();
     progress.remove(&file_progress);
     Ok(())
+  }
+}
+
+
+
+pub struct Delete {
+  pub path: PathBuf,
+  pub relative: String,
+}
+
+impl Delete {
+  pub fn new(path: PathBuf, relative: String) -> Self {
+    Self{path, relative}
   }
 }
