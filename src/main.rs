@@ -12,8 +12,9 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{progress_helpers::{finish_progress, spinner, PROGERSS_BAR_TASK}, scanner::scanner};
+use crate::{options::Exclude, progress_helpers::{finish_progress, spinner, PROGERSS_BAR_TASK}, scanner::scanner};
 
+mod options;
 mod progress_helpers;
 mod scanner;
 mod task_copy;
@@ -25,14 +26,16 @@ enum Task {
 }
 
 fn main() {
-  let src = Path::new("E:\\AI");
-  let dst = Path::new("Y:\\backup\\AI");
+  let src = Path::new("D:/cloud.crowbait");
+  let dst = Path::new("Y:/backup/cloud.crowbait");
+  let exclusions: Vec<Exclude> = vec![Exclude::Pattern(String::from(".*"))];
 
   if !src.exists() {
     eprintln!("{} {} {}", "Source directory ".bright_red().bold(), src.display(), " not found.".bright_red().bold());
     process::exit(1);
   }
 
+  println!();
   println!("Sync: {} → {}", src.to_str().unwrap().cyan(), dst.to_str().unwrap().cyan());
 
   // Count total files - progress spinner
@@ -47,7 +50,7 @@ fn main() {
   progress.finish_with_message(format!("Found {total_files} files."));
 
   // Bounded channel (inter-thread communicaiton): blocks on send() until there is room for the message
-  let (tx, rx) = bounded::<Task>(1000);
+  let (tx, rx) = bounded::<Task>(10000);
   
   // Atomic value lets multiple threads read/write the same data safely
   // This value keeps track of how many files actually need to be copied; for worker progress bar
@@ -59,12 +62,12 @@ fn main() {
   let progress = MultiProgress::new();
   let scan_progress = progress.add(ProgressBar::new(total_files as u64));
   scan_progress.set_style(
-    ProgressStyle::with_template("Scanned:      {wide_bar} {pos}/{len}").unwrap()
+    ProgressStyle::with_template("Scanned:      {wide_bar} {pos} / {len}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   let mut work_progress = progress.add(ProgressBar::new(total_files as u64));
   work_progress.set_style(
-    ProgressStyle::with_template("{msg} {wide_bar} {pos}/{len}").unwrap()
+    ProgressStyle::with_template("{msg} {wide_bar} {pos} / {len} {eta}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   work_progress.set_message("Files copied:");
@@ -80,7 +83,8 @@ fn main() {
     tx,
     num_positive_clone,
     num_delete_clone,
-    scan_progress
+    scan_progress,
+    exclusions
   ));
 
   let mut is_delete_step = false; // deletes ALWAYS get processed after copies, making this safe
@@ -161,6 +165,7 @@ fn main() {
     let _ = fs::remove_dir(&dir);
   }
 
+  println!();
   work_progress.finish_with_message(format!(
     "Deleted {} directories in destination not present in source.",
     dst_dirs_count.to_string().cyan()
