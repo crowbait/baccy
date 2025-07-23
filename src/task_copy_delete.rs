@@ -9,15 +9,12 @@ pub struct Copy {
   pub from: PathBuf,
   pub to: PathBuf,
   pub relative: String,
+  pub bytes: u64,
 }
 
 impl Copy {
-  pub fn new(from: PathBuf, to: PathBuf, relative: String) -> Self {
-    Self{from, to, relative}
-  }
-
-  pub fn get_filesize(&self) -> u64 {
-    fs::metadata(&self.from).map(|m| m.len()).unwrap_or(0)
+  pub fn new(from: PathBuf, to: PathBuf, relative: String, bytes: u64) -> Self {
+    Self{from, to, relative, bytes}
   }
 
   fn copy_mtime(&self) {
@@ -35,7 +32,7 @@ impl Copy {
   }
 
   pub fn execute_with_progress(&self, progress: &MultiProgress) -> std::io::Result<()> {
-    let file_progress = progress.add(ProgressBar::new(self.get_filesize()));
+    let file_progress = progress.add(ProgressBar::new(self.bytes));
     file_progress.set_style(
       // ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
       ProgressStyle::with_template("Copying: {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")

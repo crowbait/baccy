@@ -1,4 +1,4 @@
-use std::{fs, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicUsize, Ordering}, Arc}};
+use std::{fs, os::windows::fs::MetadataExt, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicU64, AtomicUsize, Ordering}, Arc}};
 
 use colored::Colorize;
 use crossbeam::channel::Sender;
@@ -14,6 +14,7 @@ pub fn scanner(
   tx: Sender<Task>,
   num_positive: Arc<AtomicUsize>,
   num_delete: Arc<AtomicUsize>,
+  bytes_to_copy: Arc<AtomicU64>,
   progress: &ProgressBar,
   exclude_dirs: Vec<String>,
   exclude_files: Vec<String>,
@@ -55,13 +56,16 @@ pub fn scanner(
       continue;
     }
 
+    let src_metadata = entry.metadata().unwrap();
+    let bytes = src_metadata.file_size();
+
     let needs_copy = 
       if excluded {
         false
       } else {
         match fs::metadata(&path_in_dst) {
           Ok(metadata) => {
-            let src_mtime = entry.metadata().unwrap().modified().unwrap();
+            let src_mtime = src_metadata.modified().unwrap();
             let dst_mtime = metadata.modified().unwrap();
             src_mtime > dst_mtime
           }
@@ -72,14 +76,16 @@ pub fn scanner(
     if needs_copy {
       // increment positive match count (for worker progress) and send task
       num_positive.fetch_add(1, Ordering::SeqCst);
+      bytes_to_copy.fetch_add(bytes, Ordering::SeqCst);
       tx.send(Task::Copy(task_copy_delete::Copy::new(
         entry.path().to_path_buf(),
         path_in_dst,
         relative_path.display().to_string(),
+        bytes
       ))).unwrap();
       progress.set_message(format!("{:<15}", format!(
         "Buffer: {:.2}%",
-        tx.len() / CHANNEL_CAPACITY * 100
+        (tx.len() as f64 / CHANNEL_CAPACITY as f64) * 100.0
       ).dimmed()));
     }
 

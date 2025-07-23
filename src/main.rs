@@ -1,6 +1,6 @@
 use std::{
   collections::HashSet, fs, path::PathBuf, sync::{
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicU64, AtomicUsize, Ordering},
     Arc,
   }, thread
 };
@@ -11,13 +11,14 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{args_cli::Arguments, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner};
+use crate::{args_cli::Arguments, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner, util::bytes_to_str};
 
 mod args_util;
 mod args_cli;
 mod progress_helpers;
 mod scanner;
 mod task_copy_delete;
+mod util;
 
 // Represents a copy or delete task
 enum Task {
@@ -33,7 +34,7 @@ impl Task {
   }
 }
 
-pub const CHANNEL_CAPACITY: usize = 1000;
+pub const CHANNEL_CAPACITY: usize = 10000;
 
 fn main() {
   let args = Arguments::parse();
@@ -62,24 +63,25 @@ fn main() {
   let (tx, rx) = bounded::<Task>(CHANNEL_CAPACITY);
   
   // Atomic value lets multiple threads read/write the same data safely
-  // This value keeps track of how many files actually need to be copied; for worker progress bar
   let num_scanned_positive = Arc::new(AtomicUsize::new(0));
   // Keeps track of how many files have to be deleted
   let num_scanned_delete = Arc::new(AtomicUsize::new(0));
+  // This value keeps track of how many files actually need to be copied; for worker progress bar
+  let bytes_to_copy_total = Arc::new(AtomicU64::new(0));
 
   // Prepare progress
   let progress = MultiProgress::new();
   let scan_progress = progress.add(ProgressBar::new(total_files as u64));
   scan_progress.set_style(
-    ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>6} / {len:>6}   {msg}").unwrap()
+    ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>10} / {len:>10}   {msg}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   let mut work_progress = progress.add(ProgressBar::new(total_files as u64));
   work_progress.set_style(
-    ProgressStyle::with_template("{msg} {wide_bar} {pos:>6} / {len:>6}   ETA: {eta:<10}").unwrap()
+    ProgressStyle::with_template("{msg} {wide_bar} {bytes:>10} / {total_bytes:>10}   ETA: {eta:<10}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
-  work_progress.set_message("Files copied:");
+  work_progress.set_message("Bytes copied:");
   let mut filename_progress = progress.add(ProgressBar::new_spinner());
   setup_spinner(&mut filename_progress, "");
   
@@ -88,12 +90,14 @@ fn main() {
   let dst_clone = args.target.clone();
   let num_positive_clone = num_scanned_positive.clone();
   let num_delete_clone = num_scanned_delete.clone();
+  let num_bytes_clone = bytes_to_copy_total.clone();
   thread::spawn(move || scanner(
     src_clone,
     dst_clone,
     tx,
     num_positive_clone,
     num_delete_clone,
+    num_bytes_clone,
     &scan_progress,
     args.exclude_dirs,
     args.exclude_files,
@@ -109,8 +113,8 @@ fn main() {
     ));
     match task {
       Task::Copy(task) => {
-        work_progress.set_length(num_scanned_positive.load(Ordering::SeqCst) as u64);
-        let result = if task.get_filesize() > (1024*1024*50) {
+        work_progress.set_length(bytes_to_copy_total.load(Ordering::SeqCst));
+        let result = if task.bytes > (1024*1024*50) {
           task.execute_with_progress(&progress)
         } else {
           task.execute()
@@ -122,14 +126,15 @@ fn main() {
             task.to.display()
           ));
         }
-        work_progress.inc(1);
+        work_progress.inc(task.bytes as u64);
       }
       Task::Delete(task) => {
         if !is_delete_step {
           is_delete_step = true;
           finish_progress(work_progress, format!(
-            "Copied {} files.",
-            num_scanned_positive.load(Ordering::SeqCst).to_string().cyan()
+            "Copied {} files, {}.",
+            num_scanned_positive.load(Ordering::SeqCst).to_string().cyan(),
+            bytes_to_str(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
           ));
           work_progress = progress.add(ProgressBar::new_spinner());
           setup_spinner(&mut work_progress, "Deleting files...");
@@ -151,8 +156,9 @@ fn main() {
     ));
   } else {
     finish_progress(work_progress, format!(
-      "Copied {} files.",
-      num_scanned_positive.load(Ordering::SeqCst).to_string().cyan()
+      "Copied {} files, {}.",
+      num_scanned_positive.load(Ordering::SeqCst).to_string().cyan(),
+      bytes_to_str(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
     ));
   }
   filename_progress.finish_and_clear();
