@@ -1,20 +1,20 @@
-// #![allow(unused_assignments)]
-
 use std::{
-  collections::HashSet, fs, path::{Path, PathBuf}, process, sync::{
+  collections::HashSet, fs, path::PathBuf, sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
   }, thread
 };
 
+use clap::Parser;
 use colored::Colorize;
 use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{options::Exclude, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner};
+use crate::{args_cli::Arguments, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner};
 
-mod options;
+mod args_util;
+mod args_cli;
 mod progress_helpers;
 mod scanner;
 mod task_copy_delete;
@@ -33,32 +33,25 @@ impl Task {
   }
 }
 
+pub const CHANNEL_CAPACITY: usize = 1000;
+
 fn main() {
-  let src = Path::new("D:/cloud.crowbait");
-  let dst = Path::new("Y:/backup/cloud.crowbait");
-  let exclusions: Vec<Exclude> = vec![
-    Exclude::Pattern(String::from(".*")),
-    Exclude::DirName(String::from("node_modules"))
-  ];
-
-  if !src.exists() {
-    eprintln!("{} {} {}", "Source directory ".bright_red().bold(), src.display(), " not found.".bright_red().bold());
-    process::exit(1);
-  }
-
+  let args = Arguments::parse();
+  // dbg!(&args);
+  
   println!();
   println!("{}", format!(
     "Sync: {} → {}",
-    src.to_str().unwrap().cyan(),
-    dst.to_str().unwrap().cyan()
+    args.source.to_str().unwrap().cyan(),
+    args.target.to_str().unwrap().cyan()
   ).bold());
-
+  
   // Count total files - progress spinner
   let mut progress = ProgressBar::new_spinner();
   setup_spinner(&mut progress, "Counting files...");
 
   // Count total files
-  let total_files = WalkDir::new(src)
+  let total_files = WalkDir::new(&args.source)
     .into_iter()
     .filter_map(Result::ok)
     .filter(|e| e.file_type().is_file())
@@ -66,7 +59,7 @@ fn main() {
   progress.finish_with_message(format!("Found {total_files} files."));
 
   // Bounded channel (inter-thread communicaiton): blocks on send() until there is room for the message
-  let (tx, rx) = bounded::<Task>(10000);
+  let (tx, rx) = bounded::<Task>(CHANNEL_CAPACITY);
   
   // Atomic value lets multiple threads read/write the same data safely
   // This value keeps track of how many files actually need to be copied; for worker progress bar
@@ -78,12 +71,12 @@ fn main() {
   let progress = MultiProgress::new();
   let scan_progress = progress.add(ProgressBar::new(total_files as u64));
   scan_progress.set_style(
-    ProgressStyle::with_template("Scanned:      {wide_bar} {pos} / {len}").unwrap()
+    ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>6} / {len:>6}   {msg}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   let mut work_progress = progress.add(ProgressBar::new(total_files as u64));
   work_progress.set_style(
-    ProgressStyle::with_template("{msg} {wide_bar} {pos} / {len} {eta}").unwrap()
+    ProgressStyle::with_template("{msg} {wide_bar} {pos:>6} / {len:>6}   ETA: {eta:<10}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   work_progress.set_message("Files copied:");
@@ -91,8 +84,8 @@ fn main() {
   setup_spinner(&mut filename_progress, "");
   
   // Scanner thread: processes file metadata and creates tasks for worker thread
-  let src_clone = src.to_path_buf().clone();
-  let dst_clone = dst.to_path_buf().clone();
+  let src_clone = args.source.clone();
+  let dst_clone = args.target.clone();
   let num_positive_clone = num_scanned_positive.clone();
   let num_delete_clone = num_scanned_delete.clone();
   thread::spawn(move || scanner(
@@ -102,7 +95,9 @@ fn main() {
     num_positive_clone,
     num_delete_clone,
     &scan_progress,
-    exclusions
+    args.exclude_dirs,
+    args.exclude_files,
+    args.exclude_patterns
   ));
 
   let mut is_delete_step = false; // deletes ALWAYS get processed after copies, making this safe
@@ -167,20 +162,20 @@ fn main() {
   setup_spinner(&mut work_progress, "Finding directories to delete...");
 
   // find all directories (and their relative paths) in source
-  let source_dirs: HashSet<PathBuf> = WalkDir::new(&src)
+  let source_dirs: HashSet<PathBuf> = WalkDir::new(&args.source)
     .into_iter()
     .filter_map(Result::ok)
     .filter(|e| e.file_type().is_dir())
-    .map(|e| e.path().strip_prefix(&src).unwrap().to_path_buf())
+    .map(|e| e.path().strip_prefix(&args.source).unwrap().to_path_buf())
     .collect();
   // find directories in destination that have no relative-path-equivalent in source
-  let mut dst_dirs: Vec<PathBuf> = WalkDir::new(&dst)
+  let mut dst_dirs: Vec<PathBuf> = WalkDir::new(&args.target)
     .into_iter()
     .filter_map(Result::ok)
     .filter(|e| e.file_type().is_dir())
-    .map(|e| e.path().strip_prefix(&dst).unwrap().to_path_buf())
+    .map(|e| e.path().strip_prefix(&args.target).unwrap().to_path_buf())
     .filter(|rel| !source_dirs.contains(rel))
-    .map(|rel| dst.join(rel))
+    .map(|rel| args.target.join(rel))
     .collect();
 
   // sort to be bottom-up, to prevent "can't delete non-empty dir"

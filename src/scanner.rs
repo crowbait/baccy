@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicUsize, Ordering}, Arc}};
+use std::{fs, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicUsize, Ordering}, Arc}};
 
 use colored::Colorize;
 use crossbeam::channel::Sender;
@@ -6,7 +6,7 @@ use glob::Pattern;
 use indicatif::ProgressBar;
 use walkdir::WalkDir;
 
-use crate::{options::Exclude, progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy_delete, Task};
+use crate::{progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy_delete, Task, CHANNEL_CAPACITY};
 
 pub fn scanner(
   src: PathBuf,
@@ -15,29 +15,11 @@ pub fn scanner(
   num_positive: Arc<AtomicUsize>,
   num_delete: Arc<AtomicUsize>,
   progress: &ProgressBar,
-  exclude: Vec<Exclude>
+  exclude_dirs: Vec<String>,
+  exclude_files: Vec<String>,
+  exclude_patterns: Vec<Pattern>,
 ) {
   let mut scanned_total: u64 = 0;
-
-  // prepare exclusion lists (as set, for easy ".contains()")
-  let excluded_dir_names: HashSet<&str> = exclude.iter()
-    .filter_map(|ex| match ex {
-      Exclude::DirName(name) => Some(name.as_str()),
-      _ => None
-    })
-    .collect();
-  let excluded_file_names: HashSet<&str> = exclude.iter()
-    .filter_map(|ex| match ex {
-      Exclude::FileName(name) => Some(name.as_str()),
-      _ => None
-    })
-    .collect();
-  let excluded_patterns: HashSet<Pattern> = exclude.iter()
-    .filter_map(|ex| match ex {
-      Exclude::Pattern(pattern) => Pattern::new(&pattern).ok(),
-      _ => None
-    })
-    .collect();
 
   for entry in WalkDir::new(&src).into_iter().filter_map(Result::ok) {
     let relative_path = entry.path().strip_prefix(&src).unwrap();
@@ -55,19 +37,17 @@ pub fn scanner(
       // dir name - exact
       dirs_path.components().any(|c| match c {
         Component::Normal(os) => 
-          excluded_dir_names.contains(os.to_string_lossy().as_ref()),
+          exclude_dirs.iter().any(|ex| ex == &os.to_string_lossy()),
         _ => false
       })
       || // file name - exact
       entry.file_type().is_file() && 
       entry.file_name()
         .to_str()
-        .map(|s| excluded_file_names.contains(s))
+        .map(|s| exclude_files.iter().any(|ex| ex == s))
         .unwrap_or(false)
       || // pattern match
-      excluded_patterns.iter().any(|pattern| {
-        pattern.matches_path(relative_path)
-      });
+      exclude_patterns.iter().any(|pattern| pattern.matches_path(relative_path));
 
     // if is directory: perform checks and create, if appropriate
     if entry.file_type().is_dir() && !excluded {
@@ -97,6 +77,10 @@ pub fn scanner(
         path_in_dst,
         relative_path.display().to_string(),
       ))).unwrap();
+      progress.set_message(format!("{:<15}", format!(
+        "Buffer: {:.2}%",
+        tx.len() / CHANNEL_CAPACITY * 100
+      ).dimmed()));
     }
 
     progress.inc(1);

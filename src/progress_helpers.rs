@@ -4,7 +4,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 pub const PROGERSS_BAR_TASK: &str = "##-";
 pub const PROGERSS_BAR_FILE: &str = "=> ";
-
 pub const PROGRESS_SPINNER_TICKRATE: Duration = Duration::from_millis(150);
 
 pub fn spinner_style() -> ProgressStyle {
