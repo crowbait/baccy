@@ -11,7 +11,12 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{args_cli::Arguments, args_json::JSONConfig, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner, util::bytes_to_str};
+use crate::{
+  args_cli::Arguments,
+  args_json::JSONConfig,
+  progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK},
+  scanner::scanner, util::bytes_to_str
+};
 
 mod args_cli;
 mod args_json;
@@ -133,7 +138,7 @@ fn run(args: Arguments, step_prefix: String) {
     ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>10} / {len:>10}   {msg}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
-  let mut work_progress = progress.add(ProgressBar::new(total_files as u64));
+  let mut work_progress = progress.add(ProgressBar::new(1));
   work_progress.set_style(
     ProgressStyle::with_template("{msg} {wide_bar} {bytes:>10} / {total_bytes:>10}   ETA: {eta:<10}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)

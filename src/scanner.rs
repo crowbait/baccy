@@ -1,4 +1,4 @@
-use std::{fs, os::windows::fs::MetadataExt, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicU64, AtomicUsize, Ordering}, Arc}};
+use std::{fs, path::{Component, Path, PathBuf}, sync::{atomic::{AtomicU64, AtomicUsize, Ordering}, Arc}};
 
 use colored::Colorize;
 use crossbeam::channel::Sender;
@@ -65,7 +65,7 @@ pub fn scanner(
     }
 
     let src_metadata = entry.metadata().unwrap();
-    let bytes = src_metadata.file_size();
+    let bytes = src_metadata.len();
 
     let needs_copy = 
       if excluded {
