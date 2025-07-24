@@ -90,12 +90,12 @@ pub fn scanner(
         relative_path.display().to_string(),
         bytes
       ))).unwrap();
-      progress.set_message(format!("{:<15}", format!(
-        "Buffer: {:.2}%",
-        (tx.len() as f64 / CHANNEL_CAPACITY as f64) * 100.0
-      ).dimmed()));
     }
 
+    progress.set_message(format!("{:<15}", format!(
+      "Buffer: {:.2}%",
+      (tx.len() as f64 / CHANNEL_CAPACITY as f64) * 100.0
+    ).dimmed()));
     progress.inc(1);
     scanned_total += 1;
   }

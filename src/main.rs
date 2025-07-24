@@ -78,10 +78,12 @@ fn main() {
     }
     println!();
     println!("Completed {} operations.", num_ops);
+    println!();
   } else {
     // Not in JSON-config-mode, just run on arguments
     println!();
     run(args, String::from(""));
+    println!();
   }
 }
 
@@ -252,5 +254,4 @@ fn run(args: Arguments, step_prefix: String) {
     work_progress.finish_and_clear();
     progress.remove(&work_progress);
   }
-  println!();
 }
