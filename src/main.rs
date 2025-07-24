@@ -178,9 +178,11 @@ fn run(args: Arguments, step_prefix: String) {
       Task::Copy(task) => {
         work_progress.set_length(bytes_to_copy_total.load(Ordering::SeqCst));
         let result = if task.bytes > (1024*1024*50) {
-          task.execute_with_progress(&progress)
+          task.execute_with_progress(&progress, &work_progress)
         } else {
-          task.execute()
+          let res = task.execute();
+          work_progress.inc(task.bytes as u64);
+          res
         };
         if result.is_err() {
           let _ = progress.println(format!(
@@ -189,7 +191,6 @@ fn run(args: Arguments, step_prefix: String) {
             task.to.display()
           ));
         }
-        work_progress.inc(task.bytes as u64);
       }
       Task::Delete(task) => {
         if !is_delete_step {

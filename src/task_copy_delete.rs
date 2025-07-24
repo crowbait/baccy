@@ -31,7 +31,7 @@ impl Copy {
     res
   }
 
-  pub fn execute_with_progress(&self, progress: &MultiProgress) -> std::io::Result<()> {
+  pub fn execute_with_progress(&self, progress: &MultiProgress, worker_progress: &ProgressBar) -> std::io::Result<()> {
     let file_progress = progress.add(ProgressBar::new(self.bytes));
     file_progress.set_style(
       // ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
@@ -50,6 +50,7 @@ impl Copy {
     // 4MiB vector-buffer lives on heap, better performance overall
     let mut buffer = vec![0u8; 1024 * 1024 * 4];
     let mut copied: u64 = 0;
+    let worker_start_pos = worker_progress.position();
 
     loop {
       let num_bytes = reader.read(&mut buffer)?;
@@ -57,6 +58,7 @@ impl Copy {
       writer.write_all(&buffer[..num_bytes])?;
       copied += num_bytes as u64;
       file_progress.set_position(copied);
+      worker_progress.set_position(copied + worker_start_pos);
     };
 
     self.copy_mtime();
