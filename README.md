@@ -1,7 +1,7 @@
 # Backrust
 
-Informative, simple backup tool based on folder synchronization; written in Rust.
+Informative, simple backup tool based on folder synchronization, with reasonable efficiency; written in Rust.
 
-![demo](https://raw.githubusercontent.com/crowbait/backrust/main/demo.svg)
+![demo](demo.svg)
 
 ---
