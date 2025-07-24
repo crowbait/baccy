@@ -1,5 +1,5 @@
 use std::{
-  collections::HashSet, fs, path::PathBuf, sync::{
+  collections::HashSet, fs, path::PathBuf, process, sync::{
     atomic::{AtomicU64, AtomicUsize, Ordering},
     Arc,
   }, thread
@@ -11,10 +11,10 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{args_cli::Arguments, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner, util::bytes_to_str};
+use crate::{args_cli::Arguments, args_json::JSONConfig, progress_helpers::{finish_progress, setup_spinner, PROGERSS_BAR_TASK}, scanner::scanner, util::bytes_to_str};
 
-mod args_util;
 mod args_cli;
+mod args_json;
 mod progress_helpers;
 mod scanner;
 mod task_copy_delete;
@@ -40,11 +40,63 @@ fn main() {
   let args = Arguments::parse();
   // dbg!(&args);
   
-  println!();
+  if args.is_json_config() {
+    // JSON config: read and parse
+    let config_content = fs::read_to_string(&args.source).unwrap_or_else(|err| {
+      eprintln!("Failed to read config file '{}': {}", args.source.display(), err);
+      process::exit(1);
+    });
+    let mut config = serde_json::from_str::<JSONConfig>(&config_content).unwrap_or_else(|err| {
+      eprintln!("Failed to parse JSON config: {}", err);
+      process::exit(1);
+    });
+
+    // merge CLI excludes into JSON config
+    let merge_sort_dedup = |a: &Vec<String>, b: &Vec<String>| {
+      let mut out = a.iter().chain(b.iter()).cloned().collect::<Vec<_>>();
+      out.sort();
+      out.dedup();
+      out
+    };
+    config.exclude_dirs = merge_sort_dedup(&config.exclude_dirs, &args.exclude_dirs);
+    config.exclude_files = merge_sort_dedup(&config.exclude_files, &args.exclude_files);
+    config.exclude_patterns = merge_sort_dedup(&config.exclude_patterns, &args.exclude_patterns);
+
+    // dbg!(&config);
+    // run operations in loop
+    let mut i = 0;
+    let num_ops = config.operations.len();
+    for mut op in config.operations {
+      i += 1;
+      // merge global excludes with op-specific
+      op.exclude_dirs = merge_sort_dedup(&op.exclude_dirs, &config.exclude_dirs);
+      op.exclude_files = merge_sort_dedup(&op.exclude_files, &config.exclude_files);
+      op.exclude_patterns = merge_sort_dedup(&op.exclude_patterns, &config.exclude_patterns);
+
+      println!();
+      run(op, format!(" {} / {} ", i, num_ops));
+    }
+    println!();
+    println!("Completed {} operations.", num_ops);
+  } else {
+    // Not in JSON-config-mode, just run on arguments
+    println!();
+    run(args, String::from(""));
+  }
+}
+
+fn run(args: Arguments, step_prefix: String) {
+  let target = if args.target.is_some() {
+    args.target.unwrap()
+  } else {
+    panic!("Target path cannot be None on execution.");
+  };
+
   println!("{}", format!(
-    "Sync: {} → {}",
+    "{}    Sync: {} → {}",
+    step_prefix.on_cyan(),
     args.source.to_str().unwrap().cyan(),
-    args.target.to_str().unwrap().cyan()
+    target.to_str().unwrap().cyan()
   ).bold());
   
   // Count total files - progress spinner
@@ -59,7 +111,7 @@ fn main() {
     .count();
   progress.finish_with_message(format!("Found {total_files} files."));
 
-  // Bounded channel (inter-thread communicaiton): blocks on send() until there is room for the message
+  // Bounded channel (inter-thread communication): blocks on send() until there is room for the message
   let (tx, rx) = bounded::<Task>(CHANNEL_CAPACITY);
   
   // Atomic value lets multiple threads read/write the same data safely
@@ -87,7 +139,7 @@ fn main() {
   
   // Scanner thread: processes file metadata and creates tasks for worker thread
   let src_clone = args.source.clone();
-  let dst_clone = args.target.clone();
+  let dst_clone = target.clone();
   let num_positive_clone = num_scanned_positive.clone();
   let num_delete_clone = num_scanned_delete.clone();
   let num_bytes_clone = bytes_to_copy_total.clone();
@@ -175,13 +227,13 @@ fn main() {
     .map(|e| e.path().strip_prefix(&args.source).unwrap().to_path_buf())
     .collect();
   // find directories in destination that have no relative-path-equivalent in source
-  let mut dst_dirs: Vec<PathBuf> = WalkDir::new(&args.target)
+  let mut dst_dirs: Vec<PathBuf> = WalkDir::new(&target)
     .into_iter()
     .filter_map(Result::ok)
     .filter(|e| e.file_type().is_dir())
-    .map(|e| e.path().strip_prefix(&args.target).unwrap().to_path_buf())
+    .map(|e| e.path().strip_prefix(&target).unwrap().to_path_buf())
     .filter(|rel| !source_dirs.contains(rel))
-    .map(|rel| args.target.join(rel))
+    .map(|rel| target.join(rel))
     .collect();
 
   // sort to be bottom-up, to prevent "can't delete non-empty dir"
@@ -200,4 +252,5 @@ fn main() {
     work_progress.finish_and_clear();
     progress.remove(&work_progress);
   }
+  println!();
 }

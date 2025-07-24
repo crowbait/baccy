@@ -18,9 +18,16 @@ pub fn scanner(
   progress: &ProgressBar,
   exclude_dirs: Vec<String>,
   exclude_files: Vec<String>,
-  exclude_patterns: Vec<Pattern>,
+  exclude_patterns: Vec<String>,
 ) {
   let mut scanned_total: u64 = 0;
+  let exclude_patterns_parsed: Vec<Pattern> = exclude_patterns
+    .iter().map(|p| Pattern::new(p))
+    .map(|p| match p {
+      Ok(pt) => pt,
+      Err(err) => panic!("Error in pattern: {}", err.msg)
+    })
+    .collect();
 
   for entry in WalkDir::new(&src).into_iter().filter_map(Result::ok) {
     let relative_path = entry.path().strip_prefix(&src).unwrap();
@@ -48,7 +55,7 @@ pub fn scanner(
         .map(|s| exclude_files.iter().any(|ex| ex == s))
         .unwrap_or(false)
       || // pattern match
-      exclude_patterns.iter().any(|pattern| pattern.matches_path(relative_path));
+      exclude_patterns_parsed.iter().any(|pattern| pattern.matches_path(relative_path));
 
     // if is directory: perform checks and create, if appropriate
     if entry.file_type().is_dir() && !excluded {
