@@ -72,6 +72,7 @@ fn main() {
       op.exclude_dirs = merge_sort_dedup(&op.exclude_dirs, &config.exclude_dirs);
       op.exclude_files = merge_sort_dedup(&op.exclude_files, &config.exclude_files);
       op.exclude_patterns = merge_sort_dedup(&op.exclude_patterns, &config.exclude_patterns);
+      if args.no_delete { op.no_delete = true }
 
       println!();
       run(op, format!(" {} / {} ", i, num_ops));
@@ -86,6 +87,8 @@ fn main() {
     println!();
   }
 }
+
+
 
 fn run(args: Arguments, step_prefix: String) {
   let target = if args.target.is_some() {
@@ -155,7 +158,8 @@ fn run(args: Arguments, step_prefix: String) {
     &scan_progress,
     args.exclude_dirs,
     args.exclude_files,
-    args.exclude_patterns
+    args.exclude_patterns,
+    args.no_delete
   ));
 
   let mut is_delete_step = false; // deletes ALWAYS get processed after copies, making this safe

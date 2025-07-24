@@ -19,6 +19,7 @@ pub fn scanner(
   exclude_dirs: Vec<String>,
   exclude_files: Vec<String>,
   exclude_patterns: Vec<String>,
+  no_delete: bool
 ) {
   let mut scanned_total: u64 = 0;
   let exclude_patterns_parsed: Vec<Pattern> = exclude_patterns
@@ -100,33 +101,43 @@ pub fn scanner(
     scanned_total += 1;
   }
 
-  // replace progress bar with spinner
   progress.set_style(spinner_style());
-  progress.enable_steady_tick(PROGRESS_SPINNER_TICKRATE);
-  progress.set_message("Finding files to delete...");
+  if !no_delete {
+    // replace progress bar with spinner
+    progress.enable_steady_tick(PROGRESS_SPINNER_TICKRATE);
+    progress.set_message("Finding files to delete...");
 
-  // find files to delete
-  for entry in WalkDir::new(&dst).into_iter().filter_map(Result::ok) {
-    if entry.file_type().is_file() {
-      let relative_path = entry.path().strip_prefix(&dst).unwrap();
-      let path_in_src = src.join(relative_path);
-      if !path_in_src.exists() {
-        num_delete.fetch_add(1, Ordering::SeqCst);
-        tx.send(Task::Delete(task_copy_delete::Delete::new(
-          entry.path().to_path_buf(),
-          relative_path.display().to_string()
-        ))).unwrap();
+    // find files to delete
+    for entry in WalkDir::new(&dst).into_iter().filter_map(Result::ok) {
+      if entry.file_type().is_file() {
+        let relative_path = entry.path().strip_prefix(&dst).unwrap();
+        let path_in_src = src.join(relative_path);
+        if !path_in_src.exists() {
+          num_delete.fetch_add(1, Ordering::SeqCst);
+          tx.send(Task::Delete(task_copy_delete::Delete::new(
+            entry.path().to_path_buf(),
+            relative_path.display().to_string()
+          ))).unwrap();
+        }
       }
     }
-  }
 
+  }
+  
   let num_pos = num_positive.load(Ordering::SeqCst) as u64;
   progress.disable_steady_tick();
   progress.finish_with_message(format!(
-    "Scanned {} files: {} skipped, {} to copy, {} marked for deletion.",
+    "Scanned {} files: {} skipped, {} to copy, {} deletion.",
     scanned_total.to_string().cyan(),
     (scanned_total - num_pos).to_string().cyan(),
     num_pos.to_string().cyan(),
-    num_delete.load(Ordering::SeqCst).to_string().cyan()
+    if no_delete {
+      String::from("skipped")
+    } else {
+      format!(
+        "{} marked for",
+        num_delete.load(Ordering::SeqCst).to_string().cyan()
+      )
+    }
   ));
 }

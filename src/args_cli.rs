@@ -26,7 +26,8 @@ pub struct Arguments {
     alias = "xd",
     short = 'd',
     num_args = 0.. // 0 makes it optional, 1.. would have been "required with at least 1 argument"
-  )] #[serde(default)]
+  )]
+  #[serde(default)]
   pub exclude_dirs: Vec<String>,
 
   /// Exclude all files that have an exactly matching name.
@@ -37,7 +38,8 @@ pub struct Arguments {
     alias = "xf",
     short = 'f',
     num_args = 0..
-  )] #[serde(default)]
+  )]
+  #[serde(default)]
   pub exclude_files: Vec<String>,
 
   /// Exclude all paths that match a pattern.
@@ -49,8 +51,19 @@ pub struct Arguments {
     alias = "xp",
     short = 'p',
     num_args = 0..
-  )] #[serde(default)]
+  )]
+  #[serde(default)]
   pub exclude_patterns: Vec<String>,
+
+  /// Skips the "delete files from target that are not present in source" step.
+  /// Sets no-delete for all operations in JSON, if in JSON-config-mode.
+  #[arg(
+    long = "no-delete",
+    alias = "nd",
+    action // = false if not given, true if present
+  )] 
+  #[serde(default)] // defaults to false
+  pub no_delete: bool,
 }
 
 
