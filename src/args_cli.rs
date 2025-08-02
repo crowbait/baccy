@@ -1,6 +1,6 @@
 use clap::{Parser, ValueHint};
 use serde::Deserialize;
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug, Parser, Deserialize)]
 #[command(name = "Backrust", version, about = "Efficient and informative directory sync")]
@@ -76,26 +76,12 @@ pub struct Arguments {
   pub log_files: bool,
 }
 
-pub enum CliFlags {
-  NoDelete, LogFiles
-}
-
 impl Arguments {
   pub fn is_json_config(&self) -> bool {
     match &self.target {
       Some(_) => false,
       None => true
     }
-  }
-
-  pub fn was_passed(flag: CliFlags) -> bool {
-    let matches: &[&str] = match flag {
-      CliFlags::NoDelete => &["--no-delete", "--nd"],
-      CliFlags::LogFiles => &["--log-files", "-l"]
-    };
-    env::args().any(|arg| {
-      matches.contains(&arg.as_str())
-    })
   }
 }
 

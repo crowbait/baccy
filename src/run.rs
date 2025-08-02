@@ -21,9 +21,11 @@ pub fn run(args: Arguments, step_prefix: String) {
     panic!("Target path cannot be None on execution.");
   };
 
+  let no_del_warn = if args.no_delete {" NO DELETE "} else {""};
   println!("{}", format!(
-    "{}    Sync: {} → {}",
+    "{}    Sync: {}  {} → {}",
     step_prefix.on_cyan(),
+    no_del_warn.on_red().bold(),
     args.source.to_str().unwrap().cyan(),
     target.to_str().unwrap().cyan()
   ).bold());
@@ -223,5 +225,8 @@ pub fn run(args: Arguments, step_prefix: String) {
   } else {
     work_progress.finish_and_clear();
     progress.remove(&work_progress);
+  }
+  if args.no_delete {
+    println!("{}", " Delete step was skipped! ".on_yellow().bold());
   }
 }
