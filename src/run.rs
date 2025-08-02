@@ -56,7 +56,7 @@ pub fn run(args: Arguments, step_prefix: String) {
   let progress = MultiProgress::new();
   let scan_progress = progress.add(ProgressBar::new(total_files as u64));
   scan_progress.set_style(
-    ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>10} / {len:>10}   {msg}").unwrap()
+    ProgressStyle::with_template("Scanned:      {wide_bar} {pos:>10} / {len:>10}   ETA: {eta:<10}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   scan_progress.enable_steady_tick(Duration::from_millis(100));

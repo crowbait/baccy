@@ -6,7 +6,7 @@ use glob::Pattern;
 use indicatif::ProgressBar;
 use walkdir::WalkDir;
 
-use crate::{progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy_delete, Task, CHANNEL_CAPACITY};
+use crate::{progress_helpers::{spinner_style, PROGRESS_SPINNER_TICKRATE}, task_copy_delete, Task};
 
 pub fn scanner(
   src: PathBuf,
@@ -93,10 +93,6 @@ pub fn scanner(
       ))).unwrap();
     }
 
-    progress.set_message(format!("{:<15}", format!(
-      "Buffer: {:.2}%",
-      (tx.len() as f64 / CHANNEL_CAPACITY as f64) * 100.0
-    ).dimmed()));
     progress.inc(1);
     scanned_total += 1;
   }
