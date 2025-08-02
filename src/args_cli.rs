@@ -1,6 +1,6 @@
 use clap::{Parser, ValueHint};
 use serde::Deserialize;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 #[derive(Debug, Parser, Deserialize)]
 #[command(name = "Backrust", version, about = "Efficient and informative directory sync")]
@@ -56,7 +56,7 @@ pub struct Arguments {
   pub exclude_patterns: Vec<String>,
 
   /// Skips the "delete files from target that are not present in source" step.
-  /// Sets no-delete for all operations in JSON, if in JSON-config-mode.
+  /// Sets no-delete for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
   #[arg(
     long = "no-delete",
     alias = "nd",
@@ -64,8 +64,21 @@ pub struct Arguments {
   )] 
   #[serde(default)] // defaults to false
   pub no_delete: bool,
+  
+  /// Logs all copied and deleted files.
+  /// Sets log-files for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
+  #[arg(
+    long = "log-files",
+    short = 'l',
+    action // = false if not given, true if present
+  )] 
+  #[serde(default)] // defaults to false
+  pub log_files: bool,
 }
 
+pub enum CliFlags {
+  NoDelete, LogFiles
+}
 
 impl Arguments {
   pub fn is_json_config(&self) -> bool {
@@ -73,6 +86,16 @@ impl Arguments {
       Some(_) => false,
       None => true
     }
+  }
+
+  pub fn was_passed(flag: CliFlags) -> bool {
+    let matches: &[&str] = match flag {
+      CliFlags::NoDelete => &["--no-delete", "--nd"],
+      CliFlags::LogFiles => &["--log-files", "-l"]
+    };
+    env::args().any(|arg| {
+      matches.contains(&arg.as_str())
+    })
   }
 }
 

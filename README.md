@@ -1,6 +1,6 @@
 # baccy
 
-> **Informative, simple backup tool based on directory synchronization, with reasonable efficiency; written in Rust.**
+> **Informative, simple, and flexible backup tool based on directory synchronization, with reasonable efficiency; written in Rust.**
 
 ![demo](demo.svg)
 

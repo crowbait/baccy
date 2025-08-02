@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf, io::{Read, Write}};
+use std::{fs, io::{Read, Write}, path::PathBuf};
 
 use filetime::FileTime;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
