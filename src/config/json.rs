@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::args_cli::Arguments;
+use crate::config::cli::Arguments;
 
 #[derive(Debug, Deserialize)]
 pub struct JSONConfig {
@@ -35,6 +35,11 @@ pub struct JSONConfig {
   /// Sets all operations to "true" if set, no effect if set to "false".
   #[serde(default)]
   pub log_files: bool,
+
+  /// Prints information about disk usage after all operations have completed.
+  /// Expects an array of mount points / drive letters.
+  #[serde(default)]
+  pub drive_info: Vec<String>,
 
   /// Defines sync operations to run.
   #[serde(default)]

@@ -3,7 +3,7 @@ const MB: u64 = 1024*1024;
 const GB: u64 = 1024*1024*1024;
 const TB: u64 = 1024*1024*1024*1024;
 
-pub fn bytes_to_str(bytes: u64) -> String {
+pub fn bytes_to_string(bytes: u64) -> String {
   match bytes {
     0..MB => {format!("{:.2} kiB", bytes as f64 / KB as f64)},
     MB..GB => {format!("{:.2} MiB", bytes as f64 / MB as f64)},

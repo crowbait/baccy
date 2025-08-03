@@ -3,14 +3,15 @@ use std::{
 };
 
 use clap::Parser;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use sysinfo::Disks;
 
 use crate::{
-  args_cli::Arguments,
-  args_json::JSONConfig
+  config::{cli::Arguments, json::JSONConfig},
+  util::normalize_drive::normalize_drive
 };
 
-mod args_cli;
-mod args_json;
+mod config;
 mod progress_helpers;
 mod run;
 mod scanner;
@@ -89,6 +90,35 @@ fn main() {
     }
     println!();
     println!("Completed {} operations.", num_ops);
+
+    if config.drive_info.len() > 0 {
+      // normalize drive paths
+      config.drive_info = config.drive_info.iter().map(|d| normalize_drive(d.to_string())).collect();
+      println!();
+      println!("Drive info:");
+      let longest_drive: usize = config.drive_info.iter().fold(0, |sum, cur| {
+        if cur.len() > sum { cur.len() } else { sum }
+      });
+      let infos = MultiProgress::new();
+      for disk in Disks::new_with_refreshed_list().iter() {
+        // check if drive mount point is in provided list of mount points to print
+        if let Some(mount_str) = disk.mount_point().to_str() {
+          if !config.drive_info.contains(&mount_str.to_string()) {
+            continue;
+          }
+        }
+        // prepare progress bar
+        let info = infos.add(ProgressBar::new(disk.total_space()));
+        info.set_style(
+          ProgressStyle::with_template("{msg}   {wide_bar}   {bytes:>10} / {total_bytes:>10}   {percent:>3} % ").unwrap()
+          .progress_chars("▆▆▁")
+        );
+        info.set_message(format!("{:<width$}", disk.mount_point().display(), width = longest_drive));
+        info.set_position(disk.total_space() - disk.available_space());
+        info.abandon();
+      }
+    }
+
     println!();
   } else {
     // Not in JSON-config-mode, just run on arguments

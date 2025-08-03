@@ -10,9 +10,9 @@ use crossbeam::channel::bounded;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use walkdir::WalkDir;
 
-use crate::{args_cli::Arguments, progress_helpers::{
+use crate::{config::cli::Arguments, progress_helpers::{
   finish_progress, setup_spinner, PROGERSS_BAR_TASK
-}, scanner, util::bytes_to_str, Task, CHANNEL_CAPACITY};
+}, scanner, util::bytes_to_string::bytes_to_string, Task, CHANNEL_CAPACITY};
 
 pub fn run(args: Arguments, step_prefix: String) {
   let target = if args.target.is_some() {
@@ -109,7 +109,7 @@ pub fn run(args: Arguments, step_prefix: String) {
       let _ = progress.println(format!(
         "{:>10}: {}",
         match &file {
-          Task::Copy(task) => bytes_to_str(task.bytes).dimmed().bold(),
+          Task::Copy(task) => bytes_to_string(task.bytes).dimmed().bold(),
           Task::Delete(_) => "DEL".dimmed().bold()
         },
         file.relative().dimmed()
@@ -156,7 +156,7 @@ pub fn run(args: Arguments, step_prefix: String) {
           finish_progress(work_progress, format!(
             "Copied {} files, {}.",
             num_scanned_positive.load(Ordering::SeqCst).to_string().cyan(),
-            bytes_to_str(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
+            bytes_to_string(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
           ));
           work_progress = progress.add(ProgressBar::new_spinner());
           setup_spinner(&mut work_progress, "Deleting files...");
@@ -187,7 +187,7 @@ pub fn run(args: Arguments, step_prefix: String) {
     finish_progress(work_progress, format!(
       "Copied {} files, {}.",
       num_scanned_positive.load(Ordering::SeqCst).to_string().cyan(),
-      bytes_to_str(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
+      bytes_to_string(bytes_to_copy_total.load(Ordering::SeqCst)).cyan()
     ));
   }
   filename_progress.finish_and_clear();
