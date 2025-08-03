@@ -3,12 +3,13 @@ use std::{
 };
 
 use clap::Parser;
+use colored::Colorize;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use sysinfo::Disks;
 
 use crate::{
   config::{cli::Arguments, json::JSONConfig},
-  util::normalize_drive::normalize_drive
+  util::{normalize_drive::normalize_drive, run_command::run_command}
 };
 
 mod config;
@@ -37,7 +38,6 @@ pub const CHANNEL_CAPACITY: usize = 10000;
 fn main() {
   let args = Arguments::parse();
   // dbg!(&args);
-  
   if args.is_json_config() {
     // JSON config: read and parse
     let config = fs::read_to_string(&args.source).unwrap_or_else(|err| {
@@ -116,6 +116,15 @@ fn main() {
         info.set_message(format!("{:<width$}", disk.mount_point().display(), width = longest_drive));
         info.set_position(disk.total_space() - disk.available_space());
         info.abandon();
+      }
+    }
+
+    for cmd in config.post_commands {
+      println!();
+      println!("Running command: {}", cmd.dimmed());
+      let result = run_command(cmd);
+      if result != 0 {
+        println!("Command exited with status code {}", result.to_string().on_red());
       }
     }
 

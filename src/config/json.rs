@@ -41,6 +41,10 @@ pub struct JSONConfig {
   #[serde(default)]
   pub drive_info: Vec<String>,
 
+  /// Runs commands on the system shell after all operations have completed.
+  #[serde(default)]
+  pub post_commands: Vec<String>,
+
   /// Defines sync operations to run.
   #[serde(default)]
   pub operations: Vec<Arguments>,
