@@ -88,6 +88,9 @@ pub fn run(args: Arguments, step_prefix: String) {
     args.exclude_dirs,
     args.exclude_files,
     args.exclude_patterns,
+    args.include_dirs,
+    args.include_files,
+    args.include_patterns,
     args.no_delete
   ));
 

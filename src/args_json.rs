@@ -16,6 +16,21 @@ pub struct JSONConfig {
   #[serde(default)]
   pub exclude_patterns: Vec<String>,
 
+  /// Include only exactly matching directory names globally (for all operations).
+  /// Checked after exclusions.
+  #[serde(default)]
+  pub include_dirs: Vec<String>,
+
+  /// Include only exactly matching file names globally (for all operations).
+  /// Checked after exclusions.
+  #[serde(default)]
+  pub include_files: Vec<String>,
+
+  /// Include only matching patterns globally (for all operations).
+  /// Checked after exclusions.
+  #[serde(default)]
+  pub include_patterns: Vec<String>,
+
   /// Sets "print files copied and deleted" (for all operations).
   /// Sets all operations to "true" if set, no effect if set to "false".
   #[serde(default)]

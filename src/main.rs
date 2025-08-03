@@ -58,6 +58,11 @@ fn main() {
     config.exclude_dirs = merge_sort_dedup(&config.exclude_dirs, &args.exclude_dirs);
     config.exclude_files = merge_sort_dedup(&config.exclude_files, &args.exclude_files);
     config.exclude_patterns = merge_sort_dedup(&config.exclude_patterns, &args.exclude_patterns);
+    
+    // merge CLI includes into JSON config
+    config.include_dirs = merge_sort_dedup(&config.include_dirs, &args.include_dirs);
+    config.include_files = merge_sort_dedup(&config.include_files, &args.include_files);
+    config.include_patterns = merge_sort_dedup(&config.include_patterns, &args.include_patterns);
 
     // dbg!(&config);
     // run operations in loop
@@ -69,12 +74,15 @@ fn main() {
       op.exclude_dirs = merge_sort_dedup(&op.exclude_dirs, &config.exclude_dirs);
       op.exclude_files = merge_sort_dedup(&op.exclude_files, &config.exclude_files);
       op.exclude_patterns = merge_sort_dedup(&op.exclude_patterns, &config.exclude_patterns);
+      // merge global includes with op-specific
+      op.include_dirs = merge_sort_dedup(&op.include_dirs, &config.include_dirs);
+      op.include_files = merge_sort_dedup(&op.include_files, &config.include_files);
+      op.include_patterns = merge_sort_dedup(&op.include_patterns, &config.include_patterns);
       
       if args.no_delete { op.no_delete = true }
       if config.log_files { op.log_files = true }
       if args.log_files { op.log_files = true }
       
-
       println!();
       //dbg!(&op);
       run::run(op, format!(" {} / {} ", i, num_ops));

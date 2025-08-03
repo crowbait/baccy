@@ -55,6 +55,40 @@ pub struct Arguments {
   #[serde(default)]
   pub exclude_patterns: Vec<String>,
 
+  /// Include only directories (recursively) that have an exactly matching name.
+  /// Accepts one or multiple values. This is checked after exclusions.
+  /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
+  #[arg(
+    long = "include-dirs",
+    alias = "id",
+    num_args = 0.. // 0 makes it optional, 1.. would have been "required with at least 1 argument"
+  )]
+  #[serde(default)]
+  pub include_dirs: Vec<String>,
+
+  /// Include only files that have an exactly matching name.
+  /// Accepts one or multiple values. This is checked after exclusions.
+  /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
+  #[arg(
+    long = "include-files",
+    alias = "if",
+    num_args = 0.. // 0 makes it optional, 1.. would have been "required with at least 1 argument"
+  )]
+  #[serde(default)]
+  pub include_files: Vec<String>,
+
+  /// Include only paths that match a pattern.
+  /// Accepts one or multiple glob-like patterns ('*', '**', '?' - eg: 'src/**/*.txt').
+  /// Patterns are matched relative to the source directory. This is checked after exclusions.
+  /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
+  #[arg(
+    long = "include-patterns",
+    alias = "ip",
+    num_args = 0..
+  )]
+  #[serde(default)]
+  pub include_patterns: Vec<String>,
+
   /// Skips the "delete files from target that are not present in source" step.
   /// Sets no-delete for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
   #[arg(
