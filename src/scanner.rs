@@ -69,23 +69,23 @@ pub fn scanner(
       exclude_patterns_parsed.iter().any(|pattern| pattern.matches_path(relative_path));
 
     // check inclusions
-    let included: bool = 
-      (include_dirs.len() == 0 || dirs_path.components().any(|c| match c {
-        Component::Normal(os) =>
-          include_dirs.iter().any(|inc| inc  == &os.to_string_lossy()),
-        _ => false
-      })) && (include_files.len() == 0 || !entry.file_type().is_file() || 
+    let included: bool = (
+        // no dir rules or any dir rule matches
+        include_dirs.len() == 0 || dirs_path.components().any(|c| match c {
+          Component::Normal(os) =>
+            include_dirs.iter().any(|inc| inc  == &os.to_string_lossy()),
+          _ => false
+      })) && (
+        // no file rules or entry is not a file or any file rule matches
+        include_files.len() == 0 || !entry.file_type().is_file() || 
         entry.file_name()
           .to_str()
           .map(|s| include_files.iter().any(|inc| inc == s))
           .unwrap_or(false)
-      ) && (include_patterns.len() == 0 || include_patterns_parsed.iter().any(|pt| pt.matches_path(relative_path)));
-
-    // if is directory: perform checks and create, if appropriate
-    if entry.file_type().is_dir() && !excluded && included {
-      fs::create_dir_all(&path_in_dst).ok();
-      continue;
-    }
+      ) && (
+        // no pattern rules or any pattern matches
+        include_patterns.len() == 0 || include_patterns_parsed.iter().any(|pt| pt.matches_path(relative_path))
+      );
 
     let src_metadata = entry.metadata().unwrap();
     let bytes = src_metadata.len();

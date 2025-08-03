@@ -1,6 +1,6 @@
 # baccy
 
-> **Informative, simple, and flexible backup tool based on directory synchronization, with reasonable efficiency; written in Rust.**
+> **Informative, simple, and flexible backup tool based on directory synchronization; written in Rust.**
 
 ![demo](demo.svg)
 
@@ -13,4 +13,9 @@
 - mirrors directories (= removes files and directories no longer present in source)
 - optional JSON configuration file for defining multiple jobs at once, without needing external scripting
 - optional skip for delete step
-- flexible exclusion rules
+- flexible exclusion and inclusion rules
+- ... and more: *check the available JSON and CLI options*
+
+> [!NOTE]
+> **Exclusions** are combined with a logical *OR* - anything that hits *any* rule will be excluded.
+> **Inclusions** are combined with a logical *AND* *across* categories and a logical *OR* *within* categories. This means that, if both directory and file name rules are passed (not empty), any file must match *any* directory rule *and any* file rule to be included.

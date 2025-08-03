@@ -25,7 +25,15 @@ impl Copy {
     }
   }
 
+  fn create_parent_directories(&self) {
+    if let Some(parent) = self.to.parent() {
+      fs::create_dir_all(parent)
+        .expect(format!("Failed to create directories for {}", self.to.display()).as_str())
+    }
+  }
+
   pub fn execute(&self) -> std::io::Result<()> {
+    self.create_parent_directories();
     let res = fs::copy(&self.from, &self.to).map(|_| ());
     self.copy_mtime();
     res
@@ -36,12 +44,14 @@ impl Copy {
     file_progress.set_style(
       // ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
       ProgressStyle::with_template("Copying: {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
-        .unwrap()
-        .progress_chars(PROGERSS_BAR_FILE)
+      .unwrap()
+      .progress_chars(PROGERSS_BAR_FILE)
     );
     // file_progress.set_message(format!("{}",
     //   self.from.file_name().unwrap_or(OsStr::new("unknown")).to_str().unwrap()
     // ));
+    
+    self.create_parent_directories();
 
     let mut reader = fs::File::open(&self.from)?;
     let mut writer = fs::File::create(&self.to)?;
