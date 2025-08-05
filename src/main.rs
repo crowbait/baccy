@@ -1,5 +1,5 @@
 use std::{
-  fs, process
+  fs, process, io::{self, Write}
 };
 
 use clap::Parser;
@@ -129,6 +129,13 @@ fn main() {
           process::exit(1);
         }
       }
+    }
+
+    if config.wait_on_end {
+      println!();
+      print!("Finished. Press Enter to continue...");
+      io::stdout().flush().unwrap();
+      let _ = io::stdin().read_line(&mut String::new());
     }
 
     println!();

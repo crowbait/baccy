@@ -45,6 +45,10 @@ pub struct JSONConfig {
   #[serde(default)]
   pub post_commands: Vec<String>,
 
+  /// Waits ("Press Enter to continue") after all operations have completed.
+  #[serde(default)]
+  pub wait_on_end: bool,
+
   /// Defines sync operations to run.
   #[serde(default)]
   pub operations: Vec<Arguments>,
