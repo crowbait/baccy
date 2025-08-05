@@ -10,6 +10,9 @@ const SHELL: &str = "sh";
 #[cfg(target_family = "unix")]
 const FLAG: &str = "-c";
 
+/// This function passes its parameter as a command to the system shell.
+/// The invoked shell uses the stdout and stderr from this program.
+/// Returns the exit code of the executed command.
 pub fn run_command<S: AsRef<str>>(cmd: S) -> i32 {
   let status = Command::new(SHELL)
     .args([FLAG, format!("{}", cmd.as_ref()).as_ref()])

@@ -119,12 +119,15 @@ fn main() {
       }
     }
 
-    for cmd in config.post_commands {
+    if config.post_commands.len() > 0 {
       println!();
-      println!("Running command: {}", cmd.dimmed());
-      let result = run_command(cmd);
-      if result != 0 {
-        println!("Command exited with status code {}", result.to_string().on_red());
+      for cmd in config.post_commands {
+        println!("Running command: {}", cmd.dimmed());
+        let result = run_command(cmd);
+        if result != 0 {
+          println!("Command exited with status code {}", result.to_string().on_red());
+          process::exit(1);
+        }
       }
     }
 

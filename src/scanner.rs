@@ -41,26 +41,20 @@ pub fn scanner(
     .collect();
 
   for entry in WalkDir::new(&src).into_iter().filter_map(Result::ok) {
+    if entry.file_type().is_dir() { continue; }
     let relative_path = entry.path().strip_prefix(&src).unwrap();
+    let relative_path_parentdirs = relative_path.parent().unwrap_or_else(|| Path::new(""));
     let path_in_dst = dst.join(relative_path);
-
-    // prepares an ancestry path, excluding the file name (if file, not dir), for dirname exclusion
-    let dirs_path = if entry.file_type().is_dir() {
-      relative_path
-    } else {
-      relative_path.parent().unwrap_or_else(|| Path::new(""))
-    };
     
     // check exclusions
     let excluded: bool = 
       // dir name - exact
-      dirs_path.components().any(|c| match c {
+      relative_path_parentdirs.components().any(|c| match c {
         Component::Normal(os) => 
           exclude_dirs.iter().any(|ex| ex == &os.to_string_lossy()),
         _ => false
       })
       || // file name - exact
-      entry.file_type().is_file() && 
       entry.file_name()
         .to_str()
         .map(|s| exclude_files.iter().any(|ex| ex == s))
@@ -71,13 +65,13 @@ pub fn scanner(
     // check inclusions
     let included: bool = (
         // no dir rules or any dir rule matches
-        include_dirs.len() == 0 || dirs_path.components().any(|c| match c {
+        include_dirs.len() == 0 || relative_path_parentdirs.components().any(|c| match c {
           Component::Normal(os) =>
             include_dirs.iter().any(|inc| inc  == &os.to_string_lossy()),
           _ => false
       })) && (
         // no file rules or entry is not a file or any file rule matches
-        include_files.len() == 0 || !entry.file_type().is_file() || 
+        include_files.len() == 0 || 
         entry.file_name()
           .to_str()
           .map(|s| include_files.iter().any(|inc| inc == s))
@@ -140,7 +134,6 @@ pub fn scanner(
         }
       }
     }
-
   }
   
   let num_pos = num_positive.load(Ordering::SeqCst) as u64;

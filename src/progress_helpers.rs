@@ -18,6 +18,7 @@ pub fn spinner_style() -> ProgressStyle {
     "▪▪▪",
   ])
 }
+/// Sets defaults on a passed spinner, including template, steady tick and the given message.
 pub fn setup_spinner(progress: &mut ProgressBar, msg: &'static str) {
   progress.set_style(spinner_style());
   progress.enable_steady_tick(Duration::from_millis(150));

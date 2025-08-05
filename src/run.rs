@@ -25,7 +25,7 @@ pub fn run(args: Arguments, step_prefix: String) {
   println!("{}", format!(
     "{}    Sync: {}  {} → {}",
     step_prefix.on_cyan(),
-    no_del_warn.on_red().bold(),
+    no_del_warn.on_yellow().bold(),
     args.source.to_str().unwrap().cyan(),
     target.to_str().unwrap().cyan()
   ).bold());
