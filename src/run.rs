@@ -91,6 +91,9 @@ pub fn run(args: Arguments, step_prefix: String) {
     args.include_dirs,
     args.include_files,
     args.include_patterns,
+    args.force_include_dirs,
+    args.force_include_files,
+    args.force_include_patterns,
     args.no_delete
   ));
 

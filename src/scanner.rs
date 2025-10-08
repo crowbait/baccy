@@ -22,6 +22,9 @@ pub fn scanner(
   include_dirs: Vec<String>,
   include_files: Vec<String>,
   include_patterns: Vec<String>,
+  force_include_dirs: Vec<String>,
+  force_include_files: Vec<String>,
+  force_include_patterns: Vec<String>,
   no_delete: bool
 ) {
   let mut scanned_total: u64 = 0;
@@ -33,6 +36,13 @@ pub fn scanner(
     })
     .collect();
   let include_patterns_parsed: Vec<Pattern> = include_patterns
+    .iter().map(|p| Pattern::new(p))
+    .map(|p| match p {
+      Ok(pt) => pt,
+      Err(err) => panic!("Error in pattern: {}", err.msg)
+    })
+    .collect();
+  let force_include_patterns_parsed: Vec<Pattern> = force_include_patterns
     .iter().map(|p| Pattern::new(p))
     .map(|p| match p {
       Ok(pt) => pt,
@@ -64,28 +74,44 @@ pub fn scanner(
 
     // check inclusions
     let included: bool = (
-        // no dir rules or any dir rule matches
+        // no dir rules at all or any dir rule matches
         include_dirs.len() == 0 || relative_path_parentdirs.components().any(|c| match c {
           Component::Normal(os) =>
             include_dirs.iter().any(|inc| inc  == &os.to_string_lossy()),
           _ => false
       })) && (
-        // no file rules or entry is not a file or any file rule matches
+        // no file rules at all or entry is not a file or any file rule matches
         include_files.len() == 0 || 
         entry.file_name()
           .to_str()
           .map(|s| include_files.iter().any(|inc| inc == s))
           .unwrap_or(false)
       ) && (
-        // no pattern rules or any pattern matches
+        // no pattern rules at all or any pattern matches
         include_patterns.len() == 0 || include_patterns_parsed.iter().any(|pt| pt.matches_path(relative_path))
       );
+
+    // check forced inclusions
+    let force_included: bool =
+      // dir name
+      relative_path_parentdirs.components().any(|c| match c {
+        Component::Normal(os) => 
+          force_include_dirs.iter().any(|ex| ex == &os.to_string_lossy()),
+        _ => false
+      })
+      || // file name
+      entry.file_name()
+        .to_str()
+        .map(|s| force_include_files.iter().any(|ex| ex == s))
+        .unwrap_or(false)
+      || // pattern match
+      force_include_patterns_parsed.iter().any(|pattern| pattern.matches_path(relative_path));
 
     let src_metadata = entry.metadata().unwrap();
     let bytes = src_metadata.len();
 
     let needs_copy = 
-      if excluded || !included {
+      if (excluded || !included) && !force_included {
         false
       } else {
         match fs::metadata(&path_in_dst) {

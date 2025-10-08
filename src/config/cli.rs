@@ -89,6 +89,38 @@ pub struct Arguments {
   #[serde(default)]
   pub include_patterns: Vec<String>,
 
+  /// Forces inclusion of matching directory names, overriding all exclude and include rules.
+  #[arg(
+    long = "force-include-dirs",
+    alias = "fid",
+    num_args = 0.. // 0 makes it optional, 1.. would have been "required with at least 1 argument"
+  )]
+  #[serde(default)]
+  pub force_include_dirs: Vec<String>,
+
+  /// Forces inclusion of matching file names, overriding all exclude and include rules.
+  /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
+  #[arg(
+    long = "force-include-files",
+    alias = "fif",
+    num_args = 0.. // 0 makes it optional, 1.. would have been "required with at least 1 argument"
+  )]
+  #[serde(default)]
+  pub force_include_files: Vec<String>,
+
+  /// Forces inclusion of paths matching a pattern, overriding all exclude and include rules.
+  /// Accepts one or multiple glob-like patterns ('*', '**', '?' - eg: 'src/**/*.txt').
+  /// Patterns are matched relative to the source directory.
+  /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
+  #[arg(
+    long = "force-include-patterns",
+    alias = "fip",
+    num_args = 0..
+  )]
+  #[serde(default)]
+  pub force_include_patterns: Vec<String>,
+
+
   /// Skips the "delete files from target that are not present in source" step.
   /// Sets no-delete for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
   #[arg(

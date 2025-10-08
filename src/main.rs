@@ -65,6 +65,11 @@ fn main() {
     config.include_files = merge_sort_dedup(&config.include_files, &args.include_files);
     config.include_patterns = merge_sort_dedup(&config.include_patterns, &args.include_patterns);
 
+    // merge CLI force-includes into JSON config
+    config.force_include_dirs = merge_sort_dedup(&config.force_include_dirs, &args.force_include_dirs);
+    config.force_include_files = merge_sort_dedup(&config.force_include_files, &args.force_include_files);
+    config.force_include_patterns = merge_sort_dedup(&config.force_include_patterns, &args.force_include_patterns);
+
     // dbg!(&config);
     // run operations in loop
     let mut i = 0;
@@ -79,6 +84,10 @@ fn main() {
       op.include_dirs = merge_sort_dedup(&op.include_dirs, &config.include_dirs);
       op.include_files = merge_sort_dedup(&op.include_files, &config.include_files);
       op.include_patterns = merge_sort_dedup(&op.include_patterns, &config.include_patterns);
+      // merge global force-includes with op-specific
+      op.force_include_dirs = merge_sort_dedup(&op.force_include_dirs, &config.force_include_dirs);
+      op.force_include_files = merge_sort_dedup(&op.force_include_files, &config.force_include_files);
+      op.force_include_patterns = merge_sort_dedup(&op.force_include_patterns, &config.force_include_patterns);
       
       if args.no_delete { op.no_delete = true }
       if config.log_files { op.log_files = true }
