@@ -14,6 +14,7 @@ use crate::{config::cli::Arguments, progress_helpers::{
   finish_progress, setup_spinner, PROGERSS_BAR_TASK
 }, scanner, util::bytes_to_string::bytes_to_string, Task, CHANNEL_CAPACITY};
 
+/// Executes an operation, iterating through its tasks.
 pub fn run(args: Arguments, step_prefix: String) {
   let target = if args.target.is_some() {
     args.target.unwrap()
@@ -29,6 +30,30 @@ pub fn run(args: Arguments, step_prefix: String) {
     args.source.to_str().unwrap().cyan(),
     target.to_str().unwrap().cyan()
   ).bold());
+
+  // print rules, if set
+  // Helper function: logs a Vec<String> if it's not empty.
+  let log_rule_vector = |v: &Vec<String>, name: &str| {
+    if v.len() > 0 {println!("{}", format!(
+      "- {}: {}",
+      name,
+      (v.iter().map(|d| format!("\"{}\"", d)).collect::<Vec<String>>()).join(", ")
+    ).dimmed())}
+  };
+  // Helper function: checks a set of rules
+  let log_rule_set = |name: &str, dirs: &Vec<String>, files: &Vec<String>, patterns: &Vec<String>| {
+    if dirs.len() > 0 || files.len() > 0 || patterns.len() > 0 {
+      println!("{}", name.bold() );
+      log_rule_vector(&dirs, "Dirs    ");
+      log_rule_vector(&files, "Files   ");
+      log_rule_vector(&patterns, "Patterns");
+    }
+  };
+  if args.log_rules {
+    log_rule_set("Exclusions:", &args.exclude_dirs, &args.exclude_files, &args.exclude_patterns);
+    log_rule_set("Inclusions:", &args.include_dirs, &args.include_files, &args.include_patterns);
+    log_rule_set("Force-Inclusions:", &args.force_include_dirs, &args.force_include_files, &args.force_include_patterns);
+  }
   
   // Count total files - progress spinner
   let mut progress = ProgressBar::new_spinner();
@@ -100,12 +125,11 @@ pub fn run(args: Arguments, step_prefix: String) {
   let mut is_delete_step = false; // deletes ALWAYS get processed after copies, making this safe
   let mut deleted_count = 0;
 
-  // Prepare buffer for file name logging, if enabled
+  // Prepare file name logging (regardless if needed)
   let mut filename_buffer: VecDeque<Task> = VecDeque::with_capacity(20);
   let mut last_filename_log = Instant::now();
   let filename_log_interval = Duration::from_millis(500);
-
-  // Flushes the buffer of `Task`s that need to be logged.
+  // Helper function: flushes the buffer of `Task`s that need to be logged.
   // Returns "now" which should be assigned to `last_filename_log`.
   let log_files = |buffer: &mut VecDeque<Task>| {
     for file in buffer.drain(..) {

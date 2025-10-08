@@ -51,6 +51,11 @@ pub struct JSONConfig {
   #[serde(default)]
   pub log_files: bool,
 
+  /// Sets "print applied exclude-, include-, and force-include rules" (for all operations).
+  /// Sets all operations to "true" if set, no effect if set to "false".
+  #[serde(default)]
+  pub log_rules: bool,
+
   /// Prints information about disk usage after all operations have completed.
   /// Expects an array of mount points / drive letters.
   #[serde(default)]

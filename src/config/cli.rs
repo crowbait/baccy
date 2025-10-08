@@ -122,7 +122,7 @@ pub struct Arguments {
 
 
   /// Skips the "delete files from target that are not present in source" step.
-  /// Sets no-delete for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
+  /// If in JSON-config mode: sets no-delete for all operations in JSON, overriding per-operation setting.
   #[arg(
     long = "no-delete",
     alias = "nd",
@@ -132,7 +132,7 @@ pub struct Arguments {
   pub no_delete: bool,
   
   /// Logs all copied and deleted files.
-  /// Sets log-files for all operations in JSON, if in JSON-config-mode; overrides per-operation setting.
+  /// If in JSON-config-mode: sets log-files for all operations in JSON, overriding per-operation setting.
   #[arg(
     long = "log-files",
     short = 'l',
@@ -140,6 +140,16 @@ pub struct Arguments {
   )] 
   #[serde(default)] // defaults to false
   pub log_files: bool,
+
+  /// Logs exclude-, include-, and force-include rules for each operation.
+  /// If in JSON-config-mode: sets log-rules for all operations in JSON, overriding per-operation setting.
+  #[arg(
+    long = "log-rules",
+    alias = "lr",
+    action // = false if not given, true if present
+  )]
+  #[serde(default)] // defaults to false
+  pub log_rules: bool,
 }
 
 impl Arguments {

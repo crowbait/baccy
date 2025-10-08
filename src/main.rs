@@ -92,6 +92,8 @@ fn main() {
       if args.no_delete { op.no_delete = true }
       if config.log_files { op.log_files = true }
       if args.log_files { op.log_files = true }
+      if config.log_rules { op.log_rules = true }
+      if args.log_rules { op.log_rules = true }
       
       println!();
       //dbg!(&op);
