@@ -3,7 +3,7 @@ use serde::Deserialize;
 use std::path::PathBuf;
 
 #[derive(Debug, Parser, Deserialize)]
-#[command(name = "Backrust", version, about = "Efficient and informative directory sync")]
+#[command(name = "baccy", version, about = "Efficient and informative directory sync")]
 pub struct Arguments {
   /// First argument: path, either directory *or* JSON configuration:
   /// Directory: directory which will be synced.

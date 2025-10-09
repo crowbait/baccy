@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write       # for commit, push, tagging, changelog, releases
+  actions: read         # default, for downloading artifacts
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.changelog.outputs.version }}
+      skipped: ${{ steps.changelog.outputs.skipped }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create Conventional Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v6.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          skip-on-empty: true
+          # INFO for testing only
+          # git-push: false
+          # skip-commit: true
+          # skip-git-pull: true
+      - name: Update Cargo.toml version
+        run: |
+          NEW_VERSION=${{ steps.changelog.outputs.version }}
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: changelog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --target x86_64-unknown-linux-gnu
+      - run: mkdir dist && cp target/x86_64-unknown-linux-gnu/release/* dist/ || true
+      # IF testing
+      - name: Simulate artifact upload (local act)
+        if: ${{ github.actor == 'nektos/act' }}
+        run: |
+          echo "Simulating upload of the following files:"
+          ls -lh dist/
+      # NOT testing
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.actor != 'nektos/act' }}
+        with:
+          name: linux-binaries
+          path: dist/*
+
+  build-windows:
+    runs-on: ubuntu-latest
+    needs: changelog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+          rustup target add x86_64-pc-windows-gnu
+          cargo build --release --target x86_64-pc-windows-gnu
+      - run: mkdir dist && cp target/x86_64-pc-windows-gnu/release/* dist/ || true
+      # IF testing
+      - name: Simulate artifact upload (local act)
+        if: ${{ github.actor == 'nektos/act' }}
+        run: |
+          echo "Simulating upload of the following files:"
+          ls -lh dist/
+      # NOT testing
+      - uses: actions/upload-artifact@v4
+        if: ${{ github.actor != 'nektos/act' }}
+        with:
+          name: windows-binaries
+          path: dist/*
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [changelog, build-linux, build-windows]
+    steps:
+      - uses: actions/download-artifact@v4
+        if: ${{ github.actor != 'nektos/act' }}
+        with:
+          name: linux-binaries
+          path: dist/
+      - uses: actions/download-artifact@v4
+        if: ${{ github.actor != 'nektos/act' }}
+        with:
+          name: windows-binaries
+          path: dist/
+      # if testing, log release stuff but don't create one
+      - name: Simulate release (local act run)
+        if: ${{ github.actor == 'nektos/act' && needs.changelog.outputs.skipped == 'false' }}
+        run: |
+          echo "Simulating release..."
+          echo "Tag: v${{ needs.changelog.outputs.version }}"
+          echo "Files to include:"
+          ls -lh dist/
+          echo "---"
+          echo "Release notes preview:"
+          cat CHANGELOG.md
+      # if NOT testing, actually create release
+      - name: Create Release
+        if: ${{ github.actor != 'nektos/act' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.changelog.outputs.version }}
+          name: v${{ needs.changelog.outputs.version }}
+          body_path: CHANGELOG.md
+          files: |
+            dist/baccy
+            dist/baccy.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
