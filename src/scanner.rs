@@ -73,7 +73,7 @@ pub fn scanner(
       exclude_patterns_parsed.iter().any(|pattern| pattern.matches_path(relative_path));
 
     // check inclusions
-    let included: bool = (
+    let included: bool = !excluded && (
         // no dir rules at all or any dir rule matches
         include_dirs.len() == 0 || relative_path_parentdirs.components().any(|c| match c {
           Component::Normal(os) =>
