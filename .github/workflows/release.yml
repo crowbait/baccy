@@ -13,6 +13,7 @@ jobs:
     outputs:
       version: ${{ steps.changelog.outputs.version }}
       skipped: ${{ steps.changelog.outputs.skipped }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           skip-on-empty: true
+          skip-version-file: true
           # INFO for testing only
           # git-push: false
           # skip-commit: true
@@ -63,8 +65,8 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y mingw-w64
-          rustup target add x86_64-pc-windows-gnu
-          cargo build --release --target x86_64-pc-windows-gnu
+      - run: rustup target add x86_64-pc-windows-gnu
+      - run: cargo build --release --target x86_64-pc-windows-gnu
       - run: mkdir dist && cp target/x86_64-pc-windows-gnu/release/* dist/ || true
       # IF testing
       - name: Simulate artifact upload (local act)
@@ -106,11 +108,12 @@ jobs:
           cat CHANGELOG.md
       # if NOT testing, actually create release
       - name: Create Release
-        if: ${{ github.actor != 'nektos/act' }}
+        if: ${{ github.actor != 'nektos/act' && needs.changelog.outputs.skipped == 'false' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.changelog.outputs.version }}
           name: v${{ needs.changelog.outputs.version }}
+          body: ${{ needs.changelog.outputs.changelog }}
           body_path: CHANGELOG.md
           files: |
             dist/baccy
