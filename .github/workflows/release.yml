@@ -24,16 +24,12 @@ jobs:
         uses: TriPSs/conventional-changelog-action@v6.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          skip-on-empty: true
-          skip-version-file: true
+          skip-version-file: false
+          version-file: "./Cargo.toml"
           # INFO for testing only
           # git-push: false
           # skip-commit: true
           # skip-git-pull: true
-      - name: Update Cargo.toml version
-        run: |
-          NEW_VERSION=${{ steps.changelog.outputs.version }}
-          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
 
   build-linux:
     runs-on: ubuntu-latest
