@@ -118,7 +118,9 @@ pub fn scanner(
           Ok(metadata) => {
             let src_mtime = src_metadata.modified().unwrap();
             let dst_mtime = metadata.modified().unwrap();
+            
             src_mtime > dst_mtime
+            || bytes != metadata.len()
           }
           Err(_) => true // file missing in destination, copy
         }
