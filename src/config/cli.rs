@@ -30,7 +30,7 @@ pub struct Arguments {
   #[serde(default)]
   pub exclude_dirs: Vec<String>,
 
-  /// Exclude all files that have an exactly matching name.
+  /// Exclude all files having an exactly matching name.
   /// Accepts one or multiple values.
   /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
   #[arg(
@@ -42,7 +42,7 @@ pub struct Arguments {
   #[serde(default)]
   pub exclude_files: Vec<String>,
 
-  /// Exclude all paths that match a pattern.
+  /// Exclude all paths matching a pattern.
   /// Accepts one or multiple glob-like patterns ('*', '**', '?' - eg: 'src/**/*.txt').
   /// Patterns are matched relative to the source directory.
   /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
@@ -55,7 +55,7 @@ pub struct Arguments {
   #[serde(default)]
   pub exclude_patterns: Vec<String>,
 
-  /// Include only directories (recursively) that have an exactly matching name.
+  /// Include only directories (recursively) having an exactly matching name.
   /// Accepts one or multiple values. This is checked after exclusions.
   /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
   #[arg(
@@ -66,7 +66,7 @@ pub struct Arguments {
   #[serde(default)]
   pub include_dirs: Vec<String>,
 
-  /// Include only files that have an exactly matching name.
+  /// Include only files having an exactly matching name.
   /// Accepts one or multiple values. This is checked after exclusions.
   /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
   #[arg(
@@ -77,7 +77,7 @@ pub struct Arguments {
   #[serde(default)]
   pub include_files: Vec<String>,
 
-  /// Include only paths that match a pattern.
+  /// Include only paths matching a pattern.
   /// Accepts one or multiple glob-like patterns ('*', '**', '?' - eg: 'src/**/*.txt').
   /// Patterns are matched relative to the source directory. This is checked after exclusions.
   /// In JSON-config-mode, this will be merged with the global excludes defined in the JSON.
@@ -120,8 +120,7 @@ pub struct Arguments {
   #[serde(default)]
   pub force_include_patterns: Vec<String>,
 
-
-  /// Skips the "delete files from target that are not present in source" step.
+  /// Skips the "delete files from target not present in source" step.
   /// If in JSON-config mode: sets no-delete for all operations in JSON, overriding per-operation setting.
   #[arg(
     long = "no-delete",
@@ -131,17 +130,18 @@ pub struct Arguments {
   #[serde(default)] // defaults to false
   pub no_delete: bool,
   
-  /// Logs all copied and deleted files.
+  /// Prints the names of copied and deleted files during processing.
   /// If in JSON-config-mode: sets log-files for all operations in JSON, overriding per-operation setting.
   #[arg(
     long = "log-files",
+    alias = "lf",
     short = 'l',
     action // = false if not given, true if present
   )] 
   #[serde(default)] // defaults to false
   pub log_files: bool,
 
-  /// Logs exclude-, include-, and force-include rules for each operation.
+  /// Prints exclude-, include-, and force-include rules for each operation.
   /// If in JSON-config-mode: sets log-rules for all operations in JSON, overriding per-operation setting.
   #[arg(
     long = "log-rules",
