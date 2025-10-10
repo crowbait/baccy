@@ -1,4 +1,13 @@
-# 0.2.0 (2025-10-09)
+## [0.2.1](https://github.com/crowbait/baccy/compare/v0.2.0...v0.2.1) (2025-10-10)
+
+
+### Bug Fixes
+
+* rewrote some --help output ([ccbb920](https://github.com/crowbait/baccy/commit/ccbb920fd37bb4ff5c5b98d151c2d3883c94ac0d))
+
+
+
+# [0.2.0](https://github.com/crowbait/baccy/compare/055acfb9921c8a10660be84f72536db84ee71b86...v0.2.0) (2025-10-09)
 
 
 ### Bug Fixes
