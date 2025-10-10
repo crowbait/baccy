@@ -39,6 +39,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build --release --target x86_64-unknown-linux-gnu
       - run: mkdir dist && cp target/x86_64-unknown-linux-gnu/release/* dist/ || true
+      - run: mv dist/baccy dist/baccy_linux
       # IF testing
       - name: Simulate artifact upload (local act)
         if: ${{ github.actor == 'nektos/act' }}
@@ -111,7 +112,7 @@ jobs:
           name: v${{ needs.changelog.outputs.version }}
           body: ${{ needs.changelog.outputs.changelog }}
           files: |
-            dist/baccy
+            dist/baccy_linux
             dist/baccy.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
