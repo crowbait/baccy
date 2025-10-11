@@ -140,14 +140,14 @@
 > Eg: directory exlude `dir1` will exclude `dir1/dir2/file1`.
 
 - **Exclusions** are simple: any path that hits any of the given rules will not be copied.
-- **Inclusions** are *not* the reverse operation; they are the opposite: if any inclusion rules are passed, *only* paths matching one (or more) inclusion rules will be copied. Everything else is effectively excluded.
+- **Inclusions** are *not* the reverse operation; they are the opposite: if any inclusion rules are passed, *only* paths matching one (or more) inclusion rules will be copied (see below to how rules are applied and combined). Everything else is effectively excluded.
 - **Force-Inclusions** override both exclusions as well as inclusions; they force the file to be considered for copying.
 
 > [!NOTE]
 >
 > - **Exclusions** are combined with a logical *OR* - anything that hits *any* rule will be excluded.
 > - **Inclusions** are:
->   - combined with a logical *AND* *across* categories and a logical *OR* *within* categories. This means that, *if* both directory and file name rules are passed (not empty), any file must match *any* directory rule *and any* file rule to be included. The same logic applies to inclusion patterns.
+>   - combined with a logical *AND* *across* categories and a logical *OR* *within* categories. This means that, *if* both directory and file name rules are passed (not empty), any file must match *any* directory rule *and any* file rule to be included. The same logic extends to patterns.
 >   - checked *after* exclusions have been checked; an excluded path will not be included if targeted this way.
 > - **Force-Inclusions** are combined with a logical *OR* - anything that hits *any* rule will be forced to be included.
 
