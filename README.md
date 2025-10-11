@@ -88,22 +88,22 @@
 
 #### Operation
 
-| Property                 | Type       | Description                                                                                   |
-| ------------------------ | ---------- | --------------------------------------------------------------------------------------------- |
-| `source`                 | `string`   | **Mandatory**<br>Source directory to copy from.                                               |
-| `target`                 | `string`   | Path to a destination folder. This will *directly* contain the contents of the source folder. |
-| `exclude_dirs`           | `string[]` | [Exclude](#exclusions--inclusions) exactly matching directory names.                          |
-| `exclude_files`          | `string[]` | [Exclude](#exclusions--inclusions) exactly matching file names.                               |
-| `exclude_patterns`       | `string[]` | [Exclude](#exclusions--inclusions) paths matching [patterns](#patterns).                      |
-| `include_dirs`           | `string[]` | [Include](#exclusions--inclusions) only exactly matching directory names.                     |
-| `include_files`          | `string[]` | [Include](#exclusions--inclusions) only exactly matching file names.                          |
-| `include_patterns`       | `string[]` | [Include](#exclusions--inclusions) only paths matching [patterns](#patterns).                 |
-| `force_include_dirs`     | `string[]` | [Force-include](#exclusions--inclusions) exactly matching directory names.                    |
-| `force_include_files`    | `string[]` | [Force-include](#exclusions--inclusions) exactly matching file names.                         |
-| `force_include_patterns` | `string[]` | [Force-include](#exclusions--inclusions) paths matching [patterns](#patterns).                |
-| `no_delete`              | `bool`     | Skips the "delete files from target not present in source" step.                              |
-| `log_files`              | `bool`     | Prints names of files being copied and deleted to the console.                                |
-| `log_rules`              | `bool`     | Prints applied exclude-, include-, and force-include rules for each operation.                |
+| Property                 | Type       | Description                                                                                                    |
+| ------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------- |
+| `source`                 | `string`   | **Mandatory**<br>Source directory to copy from.                                                                |
+| `target`                 | `string`   | **Mandatory**<br>Path to a destination folder. This will *directly* contain the contents of the source folder. |
+| `exclude_dirs`           | `string[]` | [Exclude](#exclusions--inclusions) exactly matching directory names.                                           |
+| `exclude_files`          | `string[]` | [Exclude](#exclusions--inclusions) exactly matching file names.                                                |
+| `exclude_patterns`       | `string[]` | [Exclude](#exclusions--inclusions) paths matching [patterns](#patterns).                                       |
+| `include_dirs`           | `string[]` | [Include](#exclusions--inclusions) only exactly matching directory names.                                      |
+| `include_files`          | `string[]` | [Include](#exclusions--inclusions) only exactly matching file names.                                           |
+| `include_patterns`       | `string[]` | [Include](#exclusions--inclusions) only paths matching [patterns](#patterns).                                  |
+| `force_include_dirs`     | `string[]` | [Force-include](#exclusions--inclusions) exactly matching directory names.                                     |
+| `force_include_files`    | `string[]` | [Force-include](#exclusions--inclusions) exactly matching file names.                                          |
+| `force_include_patterns` | `string[]` | [Force-include](#exclusions--inclusions) paths matching [patterns](#patterns).                                 |
+| `no_delete`              | `bool`     | Skips the "delete files from target not present in source" step.                                               |
+| `log_files`              | `bool`     | Prints names of files being copied and deleted to the console.                                                 |
+| `log_rules`              | `bool`     | Prints applied exclude-, include-, and force-include rules for each operation.                                 |
 
 #### Example
 
