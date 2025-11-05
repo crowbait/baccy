@@ -88,7 +88,7 @@ pub fn run(args: Arguments, step_prefix: String) {
 
   let mut work_progress = progress.add(ProgressBar::new(1));
   work_progress.set_style(
-    ProgressStyle::with_template("{msg} {wide_bar} {bytes:>10} / {total_bytes:>10}   ETA: {eta:<10}").unwrap()
+    ProgressStyle::with_template("{msg} {wide_bar} {bytes:>10} / {total_bytes:>10}   {bytes_per_sec:<15}").unwrap()
     .progress_chars(PROGERSS_BAR_TASK)
   );
   work_progress.set_message("Bytes copied:");
