@@ -1,3 +1,12 @@
+## [0.2.2](https://github.com/crowbait/baccy/compare/v0.2.1...v0.2.2) (2025-11-05)
+
+
+### Bug Fixes
+
+* "copied" progress bar now correctly shows speed instead of meaningless ETA ([c9638ca](https://github.com/crowbait/baccy/commit/c9638caf647b86d55eb3df256459fd1f5b10505c))
+
+
+
 ## [0.2.1](https://github.com/crowbait/baccy/compare/v0.2.0...v0.2.1) (2025-10-10)
 
 
