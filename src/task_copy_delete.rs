@@ -43,7 +43,7 @@ impl Copy {
     let file_progress = progress.add(ProgressBar::new(self.bytes));
     file_progress.set_style(
       // ProgressStyle::with_template("Copying: {msg} {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
-      ProgressStyle::with_template("Copying: {wide_bar} {bytes} / {total_bytes} ({bytes_per_sec})")
+      ProgressStyle::with_template("Copying: {wide_bar} {bytes} / {total_bytes}")
       .unwrap()
       .progress_chars(PROGERSS_BAR_FILE)
     );
