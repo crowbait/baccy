@@ -60,7 +60,7 @@
 
 - <a name="opt_f1">1</a>: This option accepts one or multiple values.
 - <a name="opt_f2">2</a>: When running in JSON-config-mode, any values passed to this option via the command line will be **merged** with the corresponding global options in the JSON (eg: JSON: `"exclude_dirs":["dir1"]`, cli: `--xd dir2`, result: `["dir1", "dir2"]`).
-- <a name="opt_f3">3</a>: When running in JSON-config-mode, passing this option via the command line will **override** all *equivalent* global and per-operation settings set in the JSON.
+- <a name="opt_f3">3</a>: When running in JSON-config-mode, passing this option via the command line will **override** all equivalent global and per-operation settings set in the JSON.
 
 ### JSON
 
@@ -140,7 +140,7 @@
 > Eg: directory exlude `dir1` will exclude `dir1/dir2/file1`.
 
 - **Exclusions** are simple: any path that hits any of the given rules will not be copied.
-- **Inclusions** are *not* the reverse operation; they are the opposite: if any inclusion rules are passed, *only* paths matching one (or more) inclusion rules will be copied (see below to how rules are applied and combined). Everything else is effectively excluded.
+- **Inclusions** are *not* the reverse operation; they are the opposite: if *any* inclusion rules are set, *only* paths matching one (or more) inclusion rules will be copied (see below to how rules are applied and combined). Everything else is effectively excluded. If you don't specify any inclusion rules, all files will be considered "included".
 - **Force-Inclusions** override both exclusions as well as inclusions; they force the file to be considered for copying.
 
 > [!NOTE]
@@ -155,10 +155,16 @@
 
 Patterns are defined in glob style.
 
-Patterns are matched against the *relative* path; relative to the source directory.
+Patterns are matched against the *relative* path, relative to the source directory.
 This means that the entire path must match. To - for example - target all PDF files, you'd write `**/*.pdf`, the `**` matching "none or more arbitrary directory levels".
 
 ## Todo <!-- omit from toc -->
 
+- remodel ETA behavior:
+  - replace ETA in scanner progress with message
+  - set message: scanner ETA + copy ETA
+  - show speed on copy bar
+  - show ETA on file bar
+- make scanner channel limit optional
 - log-only mode for pipe-able output
 - add drive info / wait-on-end options to CLI
